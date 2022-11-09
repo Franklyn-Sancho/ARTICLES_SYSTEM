@@ -54,29 +54,43 @@ export async function articlesRouter(fastify: FastifyInstance) {
     });
   });
 
-  fastify.put("/articles/update/:id", async (request, reply) => {
-    const updatePost = z.object({
-      id: z.string(),
-      title: z.string(),
-      body: z.string(),
-    });
+  fastify.put<{ Params: IdParam }>(
+    "/articles/update/:id",
+    async (request, reply) => {
+      const { id } = request.params;
+      const updatePost = z.object({
+        title: z.string(),
+        body: z.string(),
+      });
 
-    const { id, title, body } = updatePost.parse(request.body);
+      const { title, body } = updatePost.parse(request.body);
 
-    const update = await prisma.articles.findUnique({
-      where: {
-        id,
-      },
-    });
+      const result = await prisma.articles.update({
+        where: {
+          id,
+        },
+        data: {
+          title,
+          body,
+        },
+      });
+      reply.status(200).send({
+        sucess: "Artigo atualizado com sucesso",
+        content: result,
+      });
+    }
+  );
 
-    await prisma.articles.update({
-      where: {
-        id: update.id,
-      },
-      data: {
-        title,
-        body,
-      },
-    });
-  });
+  fastify.delete<{ Params: IdParam }>(
+    "/article/delete/:id",
+    async (request, reply) => {
+      const { id } = request.params;
+      const deletePost = await prisma.articles.delete({
+        where: {
+          id: String(id),
+        },
+      });
+      return { deletePost };
+    }
+  );
 }
