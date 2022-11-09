@@ -34,18 +34,21 @@ export async function articlesRouter(fastify: FastifyInstance) {
     return { getOneArticle };
   });
 
-  fastify.post("/article/post", async (request, reply) => {
+  fastify.post("/article/post", {/* onRequest: [authenticate] */}, async (request, reply) => {
     const addNewPost = z.object({
       title: z.string(),
       body: z.string(),
+      createdAt: z.date()
     });
 
-    const { title, body } = addNewPost.parse(request.body);
+    const { title, body, createdAt} = addNewPost.parse(request.body);
 
     const result = await prisma.articles.create({
       data: {
         title,
         body,
+        userId: request.user.sub,
+        createdAt
       },
     });
     reply.status(200).send({

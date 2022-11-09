@@ -11,14 +11,18 @@ datasource db {
 }
 
 model Articles {
-  id    String @id @default(cuid())
-  title String
-  body  String
+  id        String   @id @default(cuid())
+  title     String
+  body      String
+  userId    String
+  createdAt DateTime
+  author    User     @relation(fields: [userId], references: [id])
 }
 
 model User {
-  id       String @id @default(cuid())
-  email    String @unique
+  id       String     @id @default(cuid())
+  email    String     @unique
   password String
   token    String?
+  Articles Articles[]
 }
