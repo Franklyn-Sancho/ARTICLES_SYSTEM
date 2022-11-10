@@ -1,6 +1,7 @@
 import { prisma } from "../lib/prisma";
 import { FastifyInstance } from "fastify";
 import { z } from "zod";
+import { authenticate } from "../plugins/authenticate";
 
 interface IdParam {
   id: string;
@@ -34,28 +35,32 @@ export async function articlesRouter(fastify: FastifyInstance) {
     return { getOneArticle };
   });
 
-  fastify.post("/article/post", {/* onRequest: [authenticate] */}, async (request, reply) => {
-    const addNewPost = z.object({
-      title: z.string(),
-      body: z.string(),
-      createdAt: z.date()
-    });
+  fastify.post(
+    "/article/post",
+    {
+      onRequest: [authenticate],
+    },
+    async (request, reply) => {
+      const addNewPost = z.object({
+        title: z.string(),
+        body: z.string(),
+      });
 
-    const { title, body, createdAt} = addNewPost.parse(request.body);
+      const { title, body } = addNewPost.parse(request.body);
 
-    const result = await prisma.articles.create({
-      data: {
-        title,
-        body,
-        userId: request.user.sub,
-        createdAt
-      },
-    });
-    reply.status(200).send({
-      sucess: "Artigo postado com sucess",
-      content: result,
-    });
-  });
+      const result = await prisma.articles.create({
+        data: {
+          title,
+          body,
+          userId: request.user.author,
+        },
+      });
+      reply.status(200).send({
+        sucess: "Artigo postado com sucess",
+        content: result,
+      });
+    }
+  );
 
   fastify.put<{ Params: IdParam }>(
     "/articles/update/:id",

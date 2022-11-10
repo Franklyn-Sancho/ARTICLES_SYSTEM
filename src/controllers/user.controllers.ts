@@ -3,8 +3,20 @@ import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { compare, hashSync } from "bcryptjs";
 import { sign } from "jsonwebtoken";
+import { authenticate } from "../plugins/authenticate";
 
 export async function userController(fastify: FastifyInstance) {
+  fastify.get(
+    "/ne",
+    {
+      onRequest: [authenticate],
+    },
+    async (request) => {
+      return { user: request.user };
+    }
+  );
+
+
   fastify.post("/user/signup", async (request, reply) => {
     const addNewUser = z.object({
       email: z.string(),

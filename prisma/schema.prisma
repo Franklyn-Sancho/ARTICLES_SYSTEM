@@ -15,7 +15,7 @@ model Articles {
   title     String
   body      String
   userId    String
-  createdAt DateTime
+  createdAt DateTime @default(now())
   author    User     @relation(fields: [userId], references: [id])
 }
 
