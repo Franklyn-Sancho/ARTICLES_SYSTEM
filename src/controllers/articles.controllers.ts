@@ -52,7 +52,7 @@ export async function articlesRouter(fastify: FastifyInstance) {
         data: {
           title,
           body,
-          userId: request.user.author,
+          userId: request.user.id,
         },
       });
       reply.status(200).send({
@@ -63,7 +63,8 @@ export async function articlesRouter(fastify: FastifyInstance) {
   );
 
   fastify.put<{ Params: IdParam }>(
-    "/articles/update/:id",
+    "/article/update/:id",
+    { onRequest: [authenticate] },
     async (request, reply) => {
       const { id } = request.params;
       const updatePost = z.object({
@@ -91,6 +92,7 @@ export async function articlesRouter(fastify: FastifyInstance) {
 
   fastify.delete<{ Params: IdParam }>(
     "/article/delete/:id",
+    { onRequest: [authenticate] },
     async (request, reply) => {
       const { id } = request.params;
       const deletePost = await prisma.articles.delete({
