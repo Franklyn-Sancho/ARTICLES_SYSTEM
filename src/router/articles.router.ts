@@ -3,30 +3,34 @@ import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { authenticate } from "../plugins/authenticate";
 
-interface ParamFastify {
-  request: FastifyRequest;
-  reply: FastifyReply;
-}
-
 interface IdParam {
   id: string;
 }
 
 export async function articlesRouter(fastify: FastifyInstance) {
-  fastify.get("/articles", async (request, reply) => {
+  fastify.get("/", async (request, reply) => {
     reply.send({
-      message: "Servidor aberto",
+      message: "Welcome to application server",
     });
-  }); 
+  });
 
-  fastify.get("/all", async (request, reply) => {
+  fastify.get("/article/all", async (request, reply) => {
     const article = await prisma.articles.findMany({
       orderBy: {
         title: "desc",
       },
     });
 
-    return { article };
+    if (article.length == 0) {
+      reply.status(401).send({
+        failed: "nenhum artigo foi publicado",
+      });
+    } else {
+      reply.status(201).send({
+        sucess: "retornando todos os artigos publicados",
+        content: article,
+      });
+    }
   });
 
   fastify.get<{ Params: IdParam }>("/article/:id", async (request, reply) => {
@@ -37,11 +41,19 @@ export async function articlesRouter(fastify: FastifyInstance) {
       },
     });
 
-    return { getOneArticle };
+    if (!getOneArticle) {
+      reply.status(401).send({
+        failed: "artigo não encontrado ou inexistente",
+      });
+    } else {
+      reply.status(201).send({
+        content: getOneArticle,
+      });
+    }
   });
 
   fastify.post(
-    "/article/post",
+    "/article/newpost",
     {
       onRequest: [authenticate],
     },
@@ -49,14 +61,16 @@ export async function articlesRouter(fastify: FastifyInstance) {
       const addNewPost = z.object({
         title: z.string(),
         body: z.string(),
+        type: z.string(),
       });
 
-      const { title, body } = addNewPost.parse(request.body);
+      const { title, body, type } = addNewPost.parse(request.body);
 
       const result = await prisma.articles.create({
         data: {
           title,
           body,
+          type,
           userId: request.user.id,
         },
       });

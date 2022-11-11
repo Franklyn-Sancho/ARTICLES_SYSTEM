@@ -26,13 +26,25 @@ export async function userController(fastify: FastifyInstance) {
 
     const hash = hashSync(password, 10);
 
-    const newUser = await prisma.user.create({
-      data: {
+    const findUser = await prisma.user.findUnique({
+      where: {
         email,
-        password: hash,
       },
     });
-    return { newUser };
+
+    if (!findUser) {
+      const newUser = await prisma.user.create({
+        data: {
+          email,
+          password: hash,
+        },
+      });
+      return { newUser };
+    } else {
+      reply.status(401).send({
+        failed: "Error! verifique seus dados e tente novamente",
+      });
+    }
   });
 
   fastify.post("/user/signin", (request, reply) => {

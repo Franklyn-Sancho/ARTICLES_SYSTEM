@@ -32,7 +32,7 @@ Tanto o sistema de cadastro, quanto de autenticação, são desenvolvidos por me
  - bcrypt e jwt para cadastro e autenticação de usuários - CONCLUÍDO
  - Operações de CRUD - CONCLUÍDO
  - Login e cadastro de usuários - CONCLUÍDO
- - Melhoria no sistema de exceções - PENDENTE
+ - Melhoria no sistema de exceções - REQUER MELHORIAS 
  - Melhoria na arquitera de código - PENDENTE
- - Melhoria na na rota de login - PENDENTE
+ - Melhoria na rota de login - PENDENTE
  - Adição de novos recursos: {} - PENDENTE

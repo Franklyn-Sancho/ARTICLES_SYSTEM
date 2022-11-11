@@ -12,6 +12,7 @@ datasource db {
 
 model Articles {
   id        String   @id @default(cuid())
+  type      String?
   title     String
   body      String
   userId    String

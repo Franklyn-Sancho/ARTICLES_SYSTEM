@@ -1,7 +1,7 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
-import { articlesRouter } from "./controllers/articles.controllers";
-import { userController } from "./controllers/user.controllers";
+import { articlesRouter } from "./router/articles.router";
+import { userController } from "./router/user.router";
 import jwt from "@fastify/jwt";
 
 require("dotenv").config();
