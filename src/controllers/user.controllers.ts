@@ -16,7 +16,6 @@ export async function userController(fastify: FastifyInstance) {
     }
   );
 
-
   fastify.post("/user/signup", async (request, reply) => {
     const addNewUser = z.object({
       email: z.string(),
@@ -44,7 +43,7 @@ export async function userController(fastify: FastifyInstance) {
 
     const { email, password } = loginUser.parse(request.body);
 
-    const result = prisma.user
+    const findUser = prisma.user
       .findUnique({
         where: {
           email,

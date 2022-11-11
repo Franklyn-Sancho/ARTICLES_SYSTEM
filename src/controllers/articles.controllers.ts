@@ -1,7 +1,12 @@
 import { prisma } from "../lib/prisma";
-import { FastifyInstance } from "fastify";
+import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { authenticate } from "../plugins/authenticate";
+
+interface ParamFastify {
+  request: FastifyRequest;
+  reply: FastifyReply;
+}
 
 interface IdParam {
   id: string;
@@ -12,7 +17,7 @@ export async function articlesRouter(fastify: FastifyInstance) {
     reply.send({
       message: "Servidor aberto",
     });
-  });
+  }); 
 
   fastify.get("/all", async (request, reply) => {
     const article = await prisma.articles.findMany({
