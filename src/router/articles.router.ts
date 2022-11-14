@@ -58,19 +58,19 @@ export async function articlesRouter(fastify: FastifyInstance) {
       onRequest: [authenticate],
     },
     async (request, reply) => {
-      const addNewPost = z.object({
+      const addNewPostValidation = z.object({
+        type: z.string(),
         title: z.string(),
         body: z.string(),
-        type: z.string(),
       });
 
-      const { title, body, type } = addNewPost.parse(request.body);
+      const { type, title, body } = addNewPostValidation.parse(request.body);
 
       const result = await prisma.articles.create({
         data: {
+          type,
           title,
           body,
-          type,
           userId: request.user.id,
         },
       });
@@ -86,12 +86,12 @@ export async function articlesRouter(fastify: FastifyInstance) {
     { onRequest: [authenticate] },
     async (request, reply) => {
       const { id } = request.params;
-      const updatePost = z.object({
+      const updatePostValidation = z.object({
         title: z.string(),
         body: z.string(),
       });
 
-      const { title, body } = updatePost.parse(request.body);
+      const { title, body } = updatePostValidation.parse(request.body);
 
       const result = await prisma.articles.update({
         where: {

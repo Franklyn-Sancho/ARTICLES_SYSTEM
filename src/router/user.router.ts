@@ -4,12 +4,13 @@ import { z } from "zod";
 import { compare, hashSync } from "bcryptjs";
 import { sign } from "jsonwebtoken";
 import { authenticate } from "../plugins/authenticate";
+import { hasRole } from "../plugins/hasRole";
 
 export async function userController(fastify: FastifyInstance) {
   fastify.get(
     "/ne",
     {
-      onRequest: [authenticate],
+      onRequest: [authenticate, hasRole(["admin", "moderator"])],
     },
     async (request) => {
       return { user: request.user };
@@ -20,9 +21,10 @@ export async function userController(fastify: FastifyInstance) {
     const addNewUser = z.object({
       email: z.string(),
       password: z.string(),
-    });
+      admin: z.string()
+    })
 
-    const { email, password } = addNewUser.parse(request.body);
+    const { email, password, admin} = addNewUser.parse(request.body);
 
     const hash = hashSync(password, 10);
 
@@ -37,6 +39,7 @@ export async function userController(fastify: FastifyInstance) {
         data: {
           email,
           password: hash,
+          admin,
         },
       });
       return { newUser };
@@ -68,6 +71,7 @@ export async function userController(fastify: FastifyInstance) {
               {
                 email: user.email,
                 id: user.id,
+                admin: user.admin,
               },
               process.env.TOKEN_KEY,
               {

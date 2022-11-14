@@ -22,6 +22,7 @@ async function main() {
     data: {
       email: "clarinha@email.com",
       password: "12345",
+      admin: "true"
     },
   });
 
