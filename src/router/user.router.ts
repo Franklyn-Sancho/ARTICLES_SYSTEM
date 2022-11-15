@@ -1,10 +1,14 @@
 import { prisma } from "../lib/prisma";
 import { FastifyInstance } from "fastify";
-import { z } from "zod";
+import { string, z } from "zod";
 import { compare, hashSync } from "bcryptjs";
 import { sign } from "jsonwebtoken";
 import { authenticate } from "../plugins/authenticate";
 import { hasRole } from "../plugins/hasRole";
+
+interface IdParamUser {
+  id: String;
+}
 
 export async function userController(fastify: FastifyInstance) {
   fastify.get(
@@ -21,10 +25,10 @@ export async function userController(fastify: FastifyInstance) {
     const addNewUser = z.object({
       email: z.string(),
       password: z.string(),
-      admin: z.string()
-    })
+      admin: z.string(),
+    });
 
-    const { email, password, admin} = addNewUser.parse(request.body);
+    const { email, password, admin } = addNewUser.parse(request.body);
 
     const hash = hashSync(password, 10);
 
@@ -93,4 +97,42 @@ export async function userController(fastify: FastifyInstance) {
         });
       });
   });
+
+  /* fastify.put<{ Params: IdParamUser }>(
+    "user/update/:id",
+    { onRequest: [authenticate] },
+    async (request, reply) => {
+      const { id } = request.params;
+      const userUpdateValidation = z.object({
+        admin: z.string(),
+      });
+
+      const { admin } = userUpdateValidation.parse(request.body);
+
+      const findUserForUpdate = await prisma.user.findUnique({
+        where: {
+          id: String(id),
+        },
+      });
+
+      if (!findUserForUpdate) {
+        reply.status(401).send({
+          failed: "Membro não encontrado ou não existe",
+        });
+      } else {
+        const result = await prisma.user.update({
+          where: {
+            id: String(id),
+          },
+          data: {
+            admin,
+          },
+        });
+        reply.status(200).send({
+          success: "Usuário atualizado com sucesso",
+          content: result,
+        });
+      }
+    }
+  ); */
 }
