@@ -6,15 +6,18 @@ import { hasRole } from "../plugins/hasRole";
 
 interface IdParam {
   id: string;
+  type: string;
 }
 
 export async function articlesRouter(fastify: FastifyInstance) {
+  // ! rota main para teste de servidor.
   fastify.get("/", async (request, reply) => {
     reply.send({
       message: "Welcome to application server",
     });
   });
 
+  // ! rota que retornar todos os artigos publicados.
   fastify.get("/article/all", async (request, reply) => {
     const article = await prisma.articles.findMany({
       orderBy: {
@@ -34,6 +37,7 @@ export async function articlesRouter(fastify: FastifyInstance) {
     }
   });
 
+  // ! rota que retorna um artigo pelo seu id.
   fastify.get<{ Params: IdParam }>("/article/:id", async (request, reply) => {
     const { id } = request.params;
     const getOneArticle = await prisma.articles.findUnique({
@@ -53,6 +57,34 @@ export async function articlesRouter(fastify: FastifyInstance) {
     }
   });
 
+  // ! rota responsável por retornar os artigos por seus tipos
+  fastify.get<{ Params: IdParam }>(
+    "/article/types/:type",
+    async (request, reply) => {
+      const { type } = request.params;
+      const allTypesArticles = await prisma.articles.findMany({
+        where: {
+          type: String(type),
+        },
+        orderBy: {
+          title: "desc",
+        },
+      });
+
+      if (allTypesArticles) {
+        reply.status(201).send({
+          success: `Retornando todos os artigos sobre ${type}`,
+          content: allTypesArticles,
+        });
+      } else {
+        reply
+          .status(400)
+          .send({ failed: "Nenhum artigo sobre este tema foi publicado" });
+      }
+    }
+  );
+
+  // ! rota responsável por postar novos artigos na aplicação.
   fastify.post(
     "/article/newpost",
     {
@@ -82,6 +114,7 @@ export async function articlesRouter(fastify: FastifyInstance) {
     }
   );
 
+  // ! rota para atualizar e editar artigos
   fastify.put<{ Params: IdParam }>(
     "/article/update/:id",
     { onRequest: [authenticate, hasRole(["admin", "moderator"])] },
@@ -110,6 +143,7 @@ export async function articlesRouter(fastify: FastifyInstance) {
     }
   );
 
+  // ! rota responsável por deletar os artigos já públicados.
   fastify.delete<{ Params: IdParam }>(
     "/article/delete/:id",
     { onRequest: [authenticate, hasRole(["admin", "moderador"])] },

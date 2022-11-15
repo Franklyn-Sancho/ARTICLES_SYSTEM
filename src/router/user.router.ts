@@ -11,12 +11,11 @@ interface IdParamUser {
 }
 
 export async function userController(fastify: FastifyInstance) {
-
   // ! rota para testar se a autenticação está funcionando
   fastify.get(
     "/ne",
     {
-      onRequest: [authenticate, hasRole(["admin", "moderador"])],
+      onRequest: [authenticate],
     },
     async (request) => {
       return { user: request.user };
@@ -91,7 +90,6 @@ export async function userController(fastify: FastifyInstance) {
               sucess: "Login realizado com sucesso",
               token: token,
             });
-
             user.token = token;
           } else {
             reply.send({
@@ -138,6 +136,22 @@ export async function userController(fastify: FastifyInstance) {
           content: result,
         });
       }
+    }
+  );
+
+  // ! rota responsável por deletar usuários
+  fastify.delete<{ Params: IdParamUser }>(
+    "/user/delete/:id",
+    { onRequest: [authenticate, hasRole(["admin"])] },
+    async (request, reply) => {
+      const { id } = request.params;
+      const userDelete = await prisma.user.delete({
+        where: {
+          id: String(id),
+        },
+      });
+
+      return { userDelete };
     }
   );
 }
