@@ -2,6 +2,7 @@ import { prisma } from "../lib/prisma";
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { authenticate } from "../plugins/authenticate";
+import { hasRole } from "../plugins/hasRole";
 
 interface IdParam {
   id: string;
@@ -83,7 +84,7 @@ export async function articlesRouter(fastify: FastifyInstance) {
 
   fastify.put<{ Params: IdParam }>(
     "/article/update/:id",
-    { onRequest: [authenticate] },
+    { onRequest: [authenticate, hasRole(["admin", "moderator"])] },
     async (request, reply) => {
       const { id } = request.params;
       const updatePostValidation = z.object({
@@ -111,7 +112,7 @@ export async function articlesRouter(fastify: FastifyInstance) {
 
   fastify.delete<{ Params: IdParam }>(
     "/article/delete/:id",
-    { onRequest: [authenticate] },
+    { onRequest: [authenticate, hasRole(["admin", "moderador"])] },
     async (request, reply) => {
       const { id } = request.params;
       const deletePost = await prisma.articles.delete({

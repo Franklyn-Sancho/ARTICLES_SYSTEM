@@ -11,21 +11,24 @@ interface IdParamUser {
 }
 
 export async function userController(fastify: FastifyInstance) {
+
+  // ! rota para testar se a autenticação está funcionando
   fastify.get(
     "/ne",
     {
-      onRequest: [authenticate, hasRole(["admin", "moderator"])],
+      onRequest: [authenticate, hasRole(["admin", "moderador"])],
     },
     async (request) => {
       return { user: request.user };
     }
   );
 
+  // ! rota responsável por cadastrar novos usuários no banco doe dados
   fastify.post("/user/signup", async (request, reply) => {
     const addNewUser = z.object({
       email: z.string(),
       password: z.string(),
-      admin: z.string(),
+      admin: z.optional(z.string()),
     });
 
     const { email, password, admin } = addNewUser.parse(request.body);
@@ -54,13 +57,14 @@ export async function userController(fastify: FastifyInstance) {
     }
   });
 
+  // ! rota responsável por fazer o login dos usuários
   fastify.post("/user/signin", (request, reply) => {
-    const loginUser = z.object({
+    const loginUserValidation = z.object({
       email: z.string(),
       password: z.string(),
     });
 
-    const { email, password } = loginUser.parse(request.body);
+    const { email, password } = loginUserValidation.parse(request.body);
 
     const findUser = prisma.user
       .findUnique({
@@ -98,9 +102,10 @@ export async function userController(fastify: FastifyInstance) {
       });
   });
 
-  /* fastify.put<{ Params: IdParamUser }>(
-    "user/update/:id",
-    { onRequest: [authenticate] },
+  // ! rota para atualizar e editar registro de usuários
+  fastify.put<{ Params: IdParamUser }>(
+    "/user/update/:id",
+    { onRequest: [authenticate, hasRole(["admin"])] },
     async (request, reply) => {
       const { id } = request.params;
       const userUpdateValidation = z.object({
@@ -134,5 +139,5 @@ export async function userController(fastify: FastifyInstance) {
         });
       }
     }
-  ); */
+  );
 }
