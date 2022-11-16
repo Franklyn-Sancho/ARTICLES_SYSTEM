@@ -19,11 +19,11 @@ interface IdParam {
 }
 
 enum TextTypes {
-  ciencia = "ciencia",
-  tecnologia = "tecnologia",
-  poesia = "poesia",
-  culinaria = "culinaria",
-  conto = "conto"
+  Ciencia = "ciencia",
+  Tecnologia = "tecnologia",
+  Poesia = "poesia",
+  Culinaria = "culinaria",
+  Conto = "conto"
 };
 
 export async function articlesRouter(fastify: FastifyInstance) {

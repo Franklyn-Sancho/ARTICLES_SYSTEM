@@ -10,6 +10,12 @@ interface IdParamUser {
   id: String;
 }
 
+enum RoleAccess {
+  Membro = "membro",
+  Admin = "admin",
+  Moderator = "moderator"
+}
+
 export async function userController(fastify: FastifyInstance) {
   // * rota para testar se a autenticação está funcionando
   fastify.get(
@@ -32,10 +38,9 @@ export async function userController(fastify: FastifyInstance) {
         .string({ required_error: "senha é obrigatório para fazer o cadastro" })
         .min(8, { message: "a senha precisa ter 8 caracteres ou mais", 
       }),
-      admin: z.optional(z.string()),
     });
 
-    const { email, password, admin } = addNewUser.parse(request.body);
+    const { email, password} = addNewUser.parse(request.body);
 
     const hash = hashSync(password, 10);
 
@@ -50,7 +55,7 @@ export async function userController(fastify: FastifyInstance) {
         data: {
           email,
           password: hash,
-          admin,
+          admin: "membro"
         },
       });
       return { newUser };
@@ -114,7 +119,7 @@ export async function userController(fastify: FastifyInstance) {
     async (request, reply) => {
       const { id } = request.params;
       const userUpdateValidation = z.object({
-        admin: z.string(),
+        admin: z.nativeEnum(RoleAccess),
       });
 
       const { admin } = userUpdateValidation.parse(request.body);
