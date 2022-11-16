@@ -11,7 +11,7 @@ interface IdParamUser {
 }
 
 export async function userController(fastify: FastifyInstance) {
-  // ! rota para testar se a autenticação está funcionando
+  // * rota para testar se a autenticação está funcionando
   fastify.get(
     "/ne",
     {
@@ -22,11 +22,16 @@ export async function userController(fastify: FastifyInstance) {
     }
   );
 
-  // ! rota responsável por cadastrar novos usuários no banco doe dados
+  // * rota responsável por cadastrar novos usuários no banco doe dados
   fastify.post("/user/signup", async (request, reply) => {
     const addNewUser = z.object({
-      email: z.string(),
-      password: z.string(),
+      email: z.string({
+        required_error: "email é requerido para fazer o cadastro",
+      }),
+      password: z
+        .string({ required_error: "senha é obrigatório para fazer o cadastro" })
+        .min(8, { message: "a senha precisa ter 8 caracteres ou mais", 
+      }),
       admin: z.optional(z.string()),
     });
 
@@ -59,8 +64,10 @@ export async function userController(fastify: FastifyInstance) {
   // ! rota responsável por fazer o login dos usuários
   fastify.post("/user/signin", (request, reply) => {
     const loginUserValidation = z.object({
-      email: z.string(),
-      password: z.string(),
+      email: z.string({ required_error: "email é requerido para fazer login" }),
+      password: z.string({
+        required_error: "senha é requerido para fazer login",
+      }),
     });
 
     const { email, password } = loginUserValidation.parse(request.body);
@@ -145,13 +152,28 @@ export async function userController(fastify: FastifyInstance) {
     { onRequest: [authenticate, hasRole(["admin"])] },
     async (request, reply) => {
       const { id } = request.params;
-      const userDelete = await prisma.user.delete({
+
+      const findUserForDelete = await prisma.user.findUnique({
         where: {
           id: String(id),
         },
       });
 
-      return { userDelete };
+      if (!findUserForDelete) {
+        reply.status(400).send({
+          failed: "Nenhum usuário foi encontrado com esse ID",
+        });
+      } else {
+        const userDelete = await prisma.user.delete({
+          where: {
+            id: String(id),
+          },
+        });
+        reply.status(200).send({
+          success: "Usuário deletado com sucesso",
+          content: userDelete,
+        });
+      }
     }
   );
 }

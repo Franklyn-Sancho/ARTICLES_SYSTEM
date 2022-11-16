@@ -36,3 +36,6 @@ Tanto o sistema de cadastro, quanto de autenticação, são desenvolvidos por me
  - Melhoria na arquitera de código - PENDENTE
  - Melhoria na rota de login - PENDENTE
  - Adição de novos recursos: {} - PENDENTE
+ - Sistema para regras de acesso - REQUER MELHORIAS
+ - controle dos tipos textuais - CONCLUÍDO
+ - 

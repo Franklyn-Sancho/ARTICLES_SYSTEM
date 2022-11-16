@@ -4,10 +4,27 @@ import { z } from "zod";
 import { authenticate } from "../plugins/authenticate";
 import { hasRole } from "../plugins/hasRole";
 
+/**
+ * * Nesse arquivo nós temos as rotas de artigos da aplicação
+ * ! São necessárias diversas melhorias e aprimoramentos
+ * TODO: melhorias nas exceções
+ * TODO: implementar validação de tipos textuais
+ * ? seria interessante adicionar co-autor?
+ * ?
+ */
+
 interface IdParam {
   id: string;
   type: string;
 }
+
+enum TextTypes {
+  ciencia = "ciencia",
+  tecnologia = "tecnologia",
+  poesia = "poesia",
+  culinaria = "culinaria",
+  conto = "conto"
+};
 
 export async function articlesRouter(fastify: FastifyInstance) {
   // ! rota main para teste de servidor.
@@ -71,7 +88,7 @@ export async function articlesRouter(fastify: FastifyInstance) {
         },
       });
 
-      if (allTypesArticles) {
+      if (allTypesArticles.length > 0) {
         reply.status(201).send({
           success: `Retornando todos os artigos sobre ${type}`,
           content: allTypesArticles,
@@ -92,12 +109,13 @@ export async function articlesRouter(fastify: FastifyInstance) {
     },
     async (request, reply) => {
       const addNewPostValidation = z.object({
-        type: z.string(),
-        title: z.string(),
-        body: z.string(),
+        type: z.nativeEnum(TextTypes),
+        title: z.string({ required_error: "Título obrigatório"}),
+        body: z.string({required_error: "O texto precisa de um corpo"})
       });
 
       const { type, title, body } = addNewPostValidation.parse(request.body);
+
 
       const result = await prisma.articles.create({
         data: {
@@ -108,7 +126,7 @@ export async function articlesRouter(fastify: FastifyInstance) {
         },
       });
       reply.status(200).send({
-        sucess: "Artigo postado com sucess",
+        sucess: "Artigo postado com sucesso",
         content: result,
       });
     }
