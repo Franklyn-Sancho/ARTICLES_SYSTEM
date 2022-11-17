@@ -1,7 +1,7 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import { articlesRouter } from "./router/articles.router";
-import { userController } from "./router/user.router";
+import { userRouter } from "./router/user.router";
 import jwt from "@fastify/jwt";
 
 require("dotenv").config();
@@ -20,7 +20,7 @@ async function main() {
   });
 
   fastify.register(articlesRouter);
-  fastify.register(userController);
+  fastify.register(userRouter);
 
   await fastify.listen({ port: 3000, host: "0.0.0.0" });
 }

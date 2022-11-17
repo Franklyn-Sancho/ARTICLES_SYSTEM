@@ -3,6 +3,7 @@ import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { z } from "zod";
 import { authenticate } from "../plugins/authenticate";
 import { hasRole } from "../plugins/hasRole";
+import { createLocalArticleToReadOffline } from "../controllers/articles.controllers";
 
 /**
  * * Nesse arquivo nós temos as rotas de artigos da aplicação
@@ -23,14 +24,14 @@ enum TextTypes {
   Tecnologia = "tecnologia",
   Poesia = "poesia",
   Culinaria = "culinaria",
-  Conto = "conto"
-};
+  Conto = "conto",
+}
 
 export async function articlesRouter(fastify: FastifyInstance) {
   // ! rota main para teste de servidor.
   fastify.get("/", async (request, reply) => {
     reply.send({
-      message: "Welcome to application server",
+      message: "Welcome do application server",
     });
   });
 
@@ -44,11 +45,11 @@ export async function articlesRouter(fastify: FastifyInstance) {
 
     if (article.length == 0) {
       reply.status(401).send({
-        failed: "nenhum artigo foi publicado",
+        failed: "Nenhum artigo foi públicado :(",
       });
     } else {
       reply.status(201).send({
-        sucess: "retornando todos os artigos publicados",
+        sucess: "Esses são os artigos publicados até o momento",
         content: article,
       });
     }
@@ -61,20 +62,25 @@ export async function articlesRouter(fastify: FastifyInstance) {
       where: {
         id: String(id),
       },
+      select: {
+        title: true,
+        body: true,
+      }
     });
 
     if (!getOneArticle) {
       reply.status(401).send({
-        failed: "artigo não encontrado ou inexistente",
+        failed: "Artigo não encontrado ou inexistente",
       });
     } else {
       reply.status(201).send({
         content: getOneArticle,
       });
+      
     }
   });
 
-  // ! rota responsável por retornar os artigos por seus tipos
+  // * rota responsável por retornar os artigos por seus tipos
   fastify.get<{ Params: IdParam }>(
     "/article/types/:type",
     async (request, reply) => {
@@ -94,14 +100,18 @@ export async function articlesRouter(fastify: FastifyInstance) {
           content: allTypesArticles,
         });
       } else {
-        reply
-          .status(400)
-          .send({ failed: "Nenhum artigo sobre este tema foi publicado" });
+        reply.status(400).send({
+          failed:
+            "Infelizmente, nenhum artigo sobre este tema foi encontrado :(",
+        });
       }
     }
   );
 
-  // ! rota responsável por postar novos artigos na aplicação.
+  /**
+   * * rota responsável por postar novos artigos no servidor
+   * ! modificar o autor para um dado não sensível
+   */
   fastify.post(
     "/article/newpost",
     {
@@ -110,12 +120,11 @@ export async function articlesRouter(fastify: FastifyInstance) {
     async (request, reply) => {
       const addNewPostValidation = z.object({
         type: z.nativeEnum(TextTypes),
-        title: z.string({ required_error: "Título obrigatório"}),
-        body: z.string({required_error: "O texto precisa de um corpo"})
+        title: z.string({ required_error: "Title Required" }),
+        body: z.string({ required_error: "Body Required" }),
       });
 
       const { type, title, body } = addNewPostValidation.parse(request.body);
-
 
       const result = await prisma.articles.create({
         data: {
@@ -126,13 +135,13 @@ export async function articlesRouter(fastify: FastifyInstance) {
         },
       });
       reply.status(200).send({
-        sucess: "Artigo postado com sucesso",
+        sucess: "Parabéns! Seu artigo foi publicado com sucesso",
         content: result,
       });
     }
   );
 
-  // ! rota para atualizar e editar artigos
+  // * update post
   fastify.put<{ Params: IdParam }>(
     "/article/update/:id",
     { onRequest: [authenticate, hasRole(["admin", "moderator"])] },
@@ -155,7 +164,7 @@ export async function articlesRouter(fastify: FastifyInstance) {
         },
       });
       reply.status(200).send({
-        sucess: "Artigo atualizado com sucesso",
+        sucess: "Post Successfully Updated",
         content: result,
       });
     }

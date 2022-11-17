@@ -1,6 +1,6 @@
 import { prisma } from "../lib/prisma";
 import { FastifyInstance } from "fastify";
-import { string, z } from "zod";
+import { z } from "zod";
 import { compare, hashSync } from "bcryptjs";
 import { sign } from "jsonwebtoken";
 import { authenticate } from "../plugins/authenticate";
@@ -13,10 +13,10 @@ interface IdParamUser {
 enum RoleAccess {
   Membro = "membro",
   Admin = "admin",
-  Moderator = "moderator"
+  Moderator = "moderator",
 }
 
-export async function userController(fastify: FastifyInstance) {
+export async function userRouter(fastify: FastifyInstance) {
   // * rota para testar se a autenticação está funcionando
   fastify.get(
     "/ne",
@@ -28,19 +28,19 @@ export async function userController(fastify: FastifyInstance) {
     }
   );
 
-  // * rota responsável por cadastrar novos usuários no banco doe dados
+  // * router 
   fastify.post("/user/signup", async (request, reply) => {
     const addNewUser = z.object({
+      name: z.string(),
       email: z.string({
-        required_error: "email é requerido para fazer o cadastro",
+        required_error: "Email Required",
       }),
       password: z
-        .string({ required_error: "senha é obrigatório para fazer o cadastro" })
-        .min(8, { message: "a senha precisa ter 8 caracteres ou mais", 
-      }),
+        .string({ required_error: "Password Required" })
+        .min(8, { message: "Password must be at least 8 characters" }),
     });
 
-    const { email, password} = addNewUser.parse(request.body);
+    const { name ,email, password } = addNewUser.parse(request.body);
 
     const hash = hashSync(password, 10);
 
@@ -53,9 +53,10 @@ export async function userController(fastify: FastifyInstance) {
     if (!findUser) {
       const newUser = await prisma.user.create({
         data: {
+          name,
           email,
           password: hash,
-          admin: "membro"
+          admin: "membro",
         },
       });
       return { newUser };
