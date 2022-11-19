@@ -1,6 +1,7 @@
 import * as fs from "fs";
 
-export function createLocalArticleToReadOffline(article) {
+
+export async function createLocalArticleToReadOffline(article) {
   let data = JSON.stringify(article, null, 2);
 
   fs.writeFile(`article.txt`, data, (err) => {

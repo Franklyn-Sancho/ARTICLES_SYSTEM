@@ -11,21 +11,31 @@ datasource db {
 }
 
 model Articles {
-  id        String   @id @default(cuid())
-  type      String?
-  title     String
-  body      String
-  userId    String
-  createdAt DateTime @default(now())
-  author    User     @relation(fields: [userId], references: [id])
+  id            String      @id @default(cuid())
+  type          String?
+  title         String
+  body          String
+  userId        String
+  contributorId String?
+  createdAt     DateTime    @default(now())
+  author        User        @relation(fields: [userId], references: [id])
+  coauthor      Contributor? @relation(fields: [contributorId], references: [id])
 }
 
 model User {
+  id          String        @id @default(cuid())
+  name        String
+  email       String        @unique
+  password    String
+  admin       String?
+  token       String?
+  Articles    Articles[]
+  Contributor Contributor[]
+}
+
+model Contributor {
   id       String     @id @default(cuid())
-  name     String 
-  email    String     @unique
-  password String
-  admin    String?
-  token    String?
+  userId   String
+  user     User       @relation(fields: [userId], references: [id])
   Articles Articles[]
 }

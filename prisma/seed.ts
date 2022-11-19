@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { userController } from "../src/router/user.router";
+
 
 const prisma = new PrismaClient();
 

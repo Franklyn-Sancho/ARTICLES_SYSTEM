@@ -28,7 +28,7 @@ export async function userRouter(fastify: FastifyInstance) {
     }
   );
 
-  // * router 
+  // * router
   fastify.post("/user/signup", async (request, reply) => {
     const addNewUser = z.object({
       name: z.string(),
@@ -40,7 +40,7 @@ export async function userRouter(fastify: FastifyInstance) {
         .min(8, { message: "Password must be at least 8 characters" }),
     });
 
-    const { name ,email, password } = addNewUser.parse(request.body);
+    const { name, email, password } = addNewUser.parse(request.body);
 
     const hash = hashSync(password, 10);
 

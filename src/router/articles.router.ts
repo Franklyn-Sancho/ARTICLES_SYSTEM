@@ -1,17 +1,15 @@
 import { prisma } from "../lib/prisma";
 import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { z } from "zod";
+import { string, z } from "zod";
 import { authenticate } from "../plugins/authenticate";
 import { hasRole } from "../plugins/hasRole";
-import { createLocalArticleToReadOffline } from "../controllers/articles.controllers";
+import * as fs from "fs";
 
 /**
  * * Nesse arquivo nós temos as rotas de artigos da aplicação
  * ! São necessárias diversas melhorias e aprimoramentos
  * TODO: melhorias nas exceções
- * TODO: implementar validação de tipos textuais
- * ? seria interessante adicionar co-autor?
- * ?
+ * TODO: implementar sistema de co-autoria => novas rotas e modificações no banco de dados
  */
 
 interface IdParam {
@@ -28,14 +26,14 @@ enum TextTypes {
 }
 
 export async function articlesRouter(fastify: FastifyInstance) {
-  // ! rota main para teste de servidor.
+  // * rota main para teste de servidor.
   fastify.get("/", async (request, reply) => {
     reply.send({
       message: "Welcome do application server",
     });
   });
 
-  // ! rota que retornar todos os artigos publicados.
+  // * rota que retorna todos os artigos publicados.
   fastify.get("/article/all", async (request, reply) => {
     const article = await prisma.articles.findMany({
       orderBy: {
@@ -55,6 +53,40 @@ export async function articlesRouter(fastify: FastifyInstance) {
     }
   });
 
+  // * rota que faz o download do artigo por id
+  fastify.get<{ Params: IdParam }>(
+    "/article/download/:id",
+    { onRequest: [authenticate] },
+    async (request, reply) => {
+      const { id } = request.params;
+
+      const findToDownload = await prisma.articles.findUnique({
+        where: {
+          id: String(id),
+        },
+        select: {
+          title: true,
+          body: true,
+        },
+      });
+
+      if (findToDownload) {
+        let data = JSON.stringify(findToDownload, null, 2);
+
+        fs.writeFile(`${findToDownload.title}.txt`, data, (err) => {
+          if (err) throw err;
+        });
+        reply.status(201).send({
+          success: "arquivo baixado com sucesso",
+        });
+      } else {
+        return reply.status(400).send({
+          failed: "Artigo inexistente ou não pode ser baixado",
+        });
+      }
+    }
+  );
+
   // ! rota que retorna um artigo pelo seu id.
   fastify.get<{ Params: IdParam }>("/article/:id", async (request, reply) => {
     const { id } = request.params;
@@ -65,7 +97,7 @@ export async function articlesRouter(fastify: FastifyInstance) {
       select: {
         title: true,
         body: true,
-      }
+      },
     });
 
     if (!getOneArticle) {
@@ -76,7 +108,6 @@ export async function articlesRouter(fastify: FastifyInstance) {
       reply.status(201).send({
         content: getOneArticle,
       });
-      
     }
   });
 
@@ -144,7 +175,13 @@ export async function articlesRouter(fastify: FastifyInstance) {
   // * update post
   fastify.put<{ Params: IdParam }>(
     "/article/update/:id",
-    { onRequest: [authenticate, hasRole(["admin", "moderator"])] },
+    /**
+     * ! ler o readme para entender a implementação do sistema de co-autor
+     * ! as regras de acesso da rota serão modificadas para um convite feito pelo autor
+     * ? convite por email ou sistema de follow
+     */
+
+    { onRequest: [authenticate] },
     async (request, reply) => {
       const { id } = request.params;
       const updatePostValidation = z.object({
@@ -160,7 +197,10 @@ export async function articlesRouter(fastify: FastifyInstance) {
         },
         data: {
           title,
-          body,
+          body, 
+        },
+        include: {
+          coauthor: true,
         },
       });
       reply.status(200).send({
