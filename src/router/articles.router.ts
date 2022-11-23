@@ -1,6 +1,6 @@
 import { prisma } from "../lib/prisma";
-import { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
-import { string, z } from "zod";
+import { FastifyInstance} from "fastify";
+import { z } from "zod";
 import { authenticate } from "../plugins/authenticate";
 import { hasRole } from "../plugins/hasRole";
 import * as fs from "fs";
@@ -29,7 +29,7 @@ export async function articlesRouter(fastify: FastifyInstance) {
   // * rota main para teste de servidor.
   fastify.get("/", async (request, reply) => {
     reply.send({
-      message: "Welcome do application server",
+      message: "Welcome to application server",
     });
   });
 
@@ -162,7 +162,9 @@ export async function articlesRouter(fastify: FastifyInstance) {
           type,
           title,
           body,
-          userId: request.user.id,
+          authorId: request.user.id,
+          
+          
         },
       });
       reply.status(200).send({
@@ -197,10 +199,10 @@ export async function articlesRouter(fastify: FastifyInstance) {
         },
         data: {
           title,
-          body, 
-        },
-        include: {
-          coauthor: true,
+          body,
+
+          contributorId: request.user.id
+          
         },
       });
       reply.status(200).send({

@@ -11,15 +11,15 @@ datasource db {
 }
 
 model Articles {
-  id            String      @id @default(cuid())
+  id            String        @id @default(cuid())
   type          String?
   title         String
   body          String
-  userId        String
+  authorId      String
   contributorId String?
-  createdAt     DateTime    @default(now())
-  author        User        @relation(fields: [userId], references: [id])
-  coauthor      Contributor? @relation(fields: [contributorId], references: [id])
+  createdAt     DateTime      @default(now())
+  author        User          @relation(fields: [authorId], references: [id])
+  coauthor      Contributor[]
 }
 
 model User {
@@ -29,13 +29,14 @@ model User {
   password    String
   admin       String?
   token       String?
-  Articles    Articles[]
-  Contributor Contributor[]
+  articles    Articles[]
+  contributor Contributor[]
 }
 
 model Contributor {
-  id       String     @id @default(cuid())
-  userId   String
-  user     User       @relation(fields: [userId], references: [id])
-  Articles Articles[]
+  id         String   @id @default(cuid())
+  userId     String
+  articlesId String
+  user       User     @relation(fields: [userId], references: [id])
+  articles   Articles @relation(fields: [articlesId], references: [id])
 }

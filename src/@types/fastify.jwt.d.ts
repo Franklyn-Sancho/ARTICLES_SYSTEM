@@ -6,12 +6,9 @@ declare module "@fastify/jwt" {
       admin: boolean;
       id: string;
       email: string;
-    },
+    };
     contributor: {
-      id: string
-    },
-    article: {
-      contributorId: string
-    }
+      id: string;
+    };
   }
 }

@@ -17,7 +17,7 @@ async function main() {
     data: {
       title: "um artigo de teste",
       body: "A parte textual de um artigo de teste",
-      userId: user.id,
+      authorId: user.id,
       createdAt: "2022-11-10T16:56:05.622Z",
     },
   });
