@@ -1,5 +1,5 @@
 import { prisma } from "../lib/prisma";
-import { FastifyInstance} from "fastify";
+import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { authenticate } from "../plugins/authenticate";
 import { hasRole } from "../plugins/hasRole";
@@ -15,6 +15,7 @@ import * as fs from "fs";
 interface IdParam {
   id: string;
   type: string;
+  coauthor: boolean;
 }
 
 enum TextTypes {
@@ -111,7 +112,7 @@ export async function articlesRouter(fastify: FastifyInstance) {
     }
   });
 
-  // * rota responsável por retornar os artigos por seus tipos
+  // * rota que retorna os artigos por seus tipos
   fastify.get<{ Params: IdParam }>(
     "/article/types/:type",
     async (request, reply) => {
@@ -140,7 +141,7 @@ export async function articlesRouter(fastify: FastifyInstance) {
   );
 
   /**
-   * * rota responsável por postar novos artigos no servidor
+   * * rota que posta novos artigos no banco de dados
    * ! modificar o autor para um dado não sensível
    */
   fastify.post(
@@ -155,7 +156,9 @@ export async function articlesRouter(fastify: FastifyInstance) {
         body: z.string({ required_error: "Body Required" }),
       });
 
-      const { type, title, body } = addNewPostValidation.parse(request.body);
+      const { type, title, body} = addNewPostValidation.parse(
+        request.body
+      );
 
       const result = await prisma.articles.create({
         data: {
@@ -163,8 +166,6 @@ export async function articlesRouter(fastify: FastifyInstance) {
           title,
           body,
           authorId: request.user.id,
-          
-          
         },
       });
       reply.status(200).send({
@@ -174,7 +175,7 @@ export async function articlesRouter(fastify: FastifyInstance) {
     }
   );
 
-  // * update post
+  // * rota que atualiza os artigos
   fastify.put<{ Params: IdParam }>(
     "/article/update/:id",
     /**
@@ -185,7 +186,7 @@ export async function articlesRouter(fastify: FastifyInstance) {
 
     { onRequest: [authenticate] },
     async (request, reply) => {
-      const { id } = request.params;
+      const { id, coauthor } = request.params;
       const updatePostValidation = z.object({
         title: z.string(),
         body: z.string(),
@@ -197,12 +198,15 @@ export async function articlesRouter(fastify: FastifyInstance) {
         where: {
           id,
         },
+
         data: {
           title,
           body,
-
-          contributorId: request.user.id
-          
+          coauthor: {
+            create: {
+              userId: request.user.id,
+            },
+          },
         },
       });
       reply.status(200).send({
@@ -212,7 +216,7 @@ export async function articlesRouter(fastify: FastifyInstance) {
     }
   );
 
-  // ! rota responsável por deletar os artigos já públicados.
+  // * rota que deleta os artigos publicados
   fastify.delete<{ Params: IdParam }>(
     "/article/delete/:id",
     { onRequest: [authenticate, hasRole(["admin", "moderador"])] },

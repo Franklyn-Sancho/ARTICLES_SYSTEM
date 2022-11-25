@@ -19,6 +19,7 @@ async function main() {
       body: "A parte textual de um artigo de teste",
       authorId: user.id,
       createdAt: "2022-11-10T16:56:05.622Z",
+      
     },
   });
 }
