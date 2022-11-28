@@ -16,6 +16,7 @@ interface IdParam {
   id: string;
   type: string;
   coauthor: boolean;
+  contribution: number;
 }
 
 enum TextTypes {
@@ -154,9 +155,10 @@ export async function articlesRouter(fastify: FastifyInstance) {
         type: z.nativeEnum(TextTypes),
         title: z.string({ required_error: "Title Required" }),
         body: z.string({ required_error: "Body Required" }),
+        contribution: z.number(),
       });
 
-      const { type, title, body} = addNewPostValidation.parse(
+      const { type, title, body, contribution } = addNewPostValidation.parse(
         request.body
       );
 
@@ -165,6 +167,7 @@ export async function articlesRouter(fastify: FastifyInstance) {
           type,
           title,
           body,
+          contribution,
           authorId: request.user.id,
         },
       });
@@ -186,7 +189,7 @@ export async function articlesRouter(fastify: FastifyInstance) {
 
     { onRequest: [authenticate] },
     async (request, reply) => {
-      const { id, coauthor } = request.params;
+      const { id } = request.params;
       const updatePostValidation = z.object({
         title: z.string(),
         body: z.string(),
@@ -194,25 +197,40 @@ export async function articlesRouter(fastify: FastifyInstance) {
 
       const { title, body } = updatePostValidation.parse(request.body);
 
-      const result = await prisma.articles.update({
+      let result = await prisma.articles.findUnique({
         where: {
           id,
         },
-
-        data: {
-          title,
-          body,
-          coauthor: {
-            create: {
-              userId: request.user.id,
-            },
-          },
+        select: {
+          contribution: true,
         },
       });
-      reply.status(200).send({
-        sucess: "Post Successfully Updated",
-        content: result,
-      });
+
+      if (result.contribution > 0 && result.contribution <= result.contribution) {
+        await prisma.articles.update({
+          where: {
+            id,
+          },
+
+          data: {
+            title,
+            body,
+            coauthor: {
+              create: {
+                userId: request.user.id,
+              },
+            },
+          },
+        });
+        reply.status(200).send({
+          sucess: "Post Successfully Updated",
+          content: result,
+        });
+      } else {
+        reply.status(401).send({
+          failed: "excedeu o número de contribuidores",
+        });
+      }
     }
   );
 
@@ -220,7 +238,7 @@ export async function articlesRouter(fastify: FastifyInstance) {
   fastify.delete<{ Params: IdParam }>(
     "/article/delete/:id",
     { onRequest: [authenticate, hasRole(["admin", "moderador"])] },
-    async (request, reply) => {
+    async (request) => {
       const { id } = request.params;
       const deletePost = await prisma.articles.delete({
         where: {

@@ -11,14 +11,15 @@ datasource db {
 }
 
 model Articles {
-  id        String        @id @default(cuid())
-  type      String?
-  title     String
-  body      String
-  authorId  String?
-  createdAt DateTime      @default(now())
-  coauthor  Contributor[]
-  author    User?         @relation(fields: [authorId], references: [id])
+  id           String        @id @default(cuid())
+  type         String?
+  title        String
+  body         String
+  authorId     String?
+  createdAt    DateTime      @default(now())
+  contribution Int?
+  coauthor     Contributor[]
+  author       User?         @relation(fields: [authorId], references: [id])
 }
 
 model User {
@@ -38,6 +39,4 @@ model Contributor {
   articlesId String
   user       User?    @relation(fields: [userId], references: [id])
   articles   Articles @relation(fields: [articlesId], references: [id])
-
-  @@unique([userId, articlesId])
 }

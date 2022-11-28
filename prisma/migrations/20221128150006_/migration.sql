@@ -6,6 +6,7 @@ CREATE TABLE "Articles" (
     "body" TEXT NOT NULL,
     "authorId" TEXT,
     "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "contribution" INTEGER,
     CONSTRAINT "Articles_authorId_fkey" FOREIGN KEY ("authorId") REFERENCES "User" ("id") ON DELETE SET NULL ON UPDATE CASCADE
 );
 
@@ -32,4 +33,4 @@ CREATE TABLE "Contributor" (
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "Contributor_userId_articlesId_key" ON "Contributor"("userId", "articlesId");
+CREATE UNIQUE INDEX "Contributor_userId_key" ON "Contributor"("userId");
