@@ -31,10 +31,8 @@ export async function userRouter(fastify: FastifyInstance) {
   // * router
   fastify.post("/user/signup", async (request, reply) => {
     const addNewUser = z.object({
-      name: z.string(),
-      email: z.string({
-        required_error: "Email Required",
-      }),
+      name: z.string({required_error: "Name required"}),
+      email: z.string({required_error: "Email Required"}),
       password: z
         .string({ required_error: "Password Required" })
         .min(8, { message: "Password must be at least 8 characters" }),
@@ -62,7 +60,7 @@ export async function userRouter(fastify: FastifyInstance) {
       return { newUser };
     } else {
       reply.status(401).send({
-        failed: "Error! verifique seus dados e tente novamente",
+        failed: "Verifique seus dados e tente novamente",
       });
     }
   });
@@ -105,9 +103,9 @@ export async function userRouter(fastify: FastifyInstance) {
             });
             user.token = token;
           } else {
-            reply.send({
-              failed: error,
-            });
+            reply.status(401).send({
+              failed: "Erro o fazer o login, verifique seus dados"
+            })
           }
         });
       });
@@ -133,7 +131,7 @@ export async function userRouter(fastify: FastifyInstance) {
 
       if (!findUserForUpdate) {
         reply.status(401).send({
-          failed: "Membro não encontrado ou não existe",
+          failed: "Membro não encontrado ou inexistente",
         });
       } else {
         const result = await prisma.user.update({
@@ -145,7 +143,7 @@ export async function userRouter(fastify: FastifyInstance) {
           },
         });
         reply.status(200).send({
-          success: "Usuário atualizado com sucesso",
+          success: "O usuário foi atualizado com sucesso",
           content: result,
         });
       }
@@ -167,7 +165,7 @@ export async function userRouter(fastify: FastifyInstance) {
 
       if (!findUserForDelete) {
         reply.status(400).send({
-          failed: "Nenhum usuário foi encontrado com esse ID",
+          failed: "Usuário não encontrado ou inexistente",
         });
       } else {
         const userDelete = await prisma.user.delete({
@@ -176,7 +174,7 @@ export async function userRouter(fastify: FastifyInstance) {
           },
         });
         reply.status(200).send({
-          success: "Usuário deletado com sucesso",
+          success: "O usuário foi deletado com sucesso",
           content: userDelete,
         });
       }

@@ -4,6 +4,7 @@ import { articlesRouter } from "./router/articles.router";
 import { userRouter } from "./router/user.router";
 import jwt from "@fastify/jwt";
 
+
 require("dotenv").config();
 
 async function main() {

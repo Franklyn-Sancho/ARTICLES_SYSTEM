@@ -4,6 +4,7 @@ import { z } from "zod";
 import { authenticate } from "../plugins/authenticate";
 import { hasRole } from "../plugins/hasRole";
 import * as fs from "fs";
+import {logger} from '../log/logger'
 
 /**
  * * Nesse arquivo nós temos as rotas de artigos da aplicação
@@ -35,7 +36,10 @@ export async function articlesRouter(fastify: FastifyInstance) {
     });
   });
 
-  // * rota que retorna todos os artigos publicados.
+  /**
+   * * rota que retornar todos os artigos já públicados
+   * * as exceções estão funcionando perfeitamente
+   */
   fastify.get("/article/all", async (request, reply) => {
     const article = await prisma.articles.findMany({
       orderBy: {
@@ -55,7 +59,10 @@ export async function articlesRouter(fastify: FastifyInstance) {
     }
   });
 
-  // * rota que faz o download do artigo por id
+  /**
+   * * rota que faz download do artigo
+   * * as exceções estão funcionamento perfeitamente
+   */
   fastify.get<{ Params: IdParam }>(
     "/article/download/:id",
     { onRequest: [authenticate] },
@@ -77,6 +84,7 @@ export async function articlesRouter(fastify: FastifyInstance) {
 
         fs.writeFile(`${findToDownload.title}.txt`, data, (err) => {
           if (err) throw err;
+          logger.error(`Ocorreu um erro ao tentar baixar o arquivo ${findToDownload.title}`)
         });
         reply.status(201).send({
           success: "arquivo baixado com sucesso",
@@ -89,7 +97,10 @@ export async function articlesRouter(fastify: FastifyInstance) {
     }
   );
 
-  // ! rota que retorna um artigo pelo seu id.
+  /**
+   * * rota que retorna um artigo pelo seu id.
+   * * as exceções estão funcionando perfeitamente
+   */
   fastify.get<{ Params: IdParam }>("/article/:id", async (request, reply) => {
     const { id } = request.params;
     const getOneArticle = await prisma.articles.findUnique({
@@ -104,16 +115,20 @@ export async function articlesRouter(fastify: FastifyInstance) {
 
     if (!getOneArticle) {
       reply.status(401).send({
-        failed: "Artigo não encontrado ou inexistente",
+        failed: "O artigo não foi encontrado ou é inexistente",
       });
     } else {
       reply.status(201).send({
+        sucess: "Artigo encontrado com sucesso",
         content: getOneArticle,
       });
     }
   });
 
-  // * rota que retorna os artigos por seus tipos
+  /**
+   * * rota que retorna os artigos por seus tipos
+   * * as exceções estão funcionamento
+   */
   fastify.get<{ Params: IdParam }>(
     "/article/types/:type",
     async (request, reply) => {
@@ -134,15 +149,16 @@ export async function articlesRouter(fastify: FastifyInstance) {
         });
       } else {
         reply.status(400).send({
-          failed:
-            "Infelizmente, nenhum artigo sobre este tema foi encontrado :(",
+          failed: "Nenhum artigo sobre esse tema foi encontrado",
         });
+        logger.error(`Não foi encontrado nenhum artigo sobre ${allTypesArticles}`)
       }
     }
   );
 
   /**
    * * rota que posta novos artigos no banco de dados
+   * * as exceções estão funcionando perfeitamente
    * ! modificar o autor para um dado não sensível
    */
   fastify.post(
@@ -155,44 +171,49 @@ export async function articlesRouter(fastify: FastifyInstance) {
         type: z.nativeEnum(TextTypes),
         title: z.string({ required_error: "Title Required" }),
         body: z.string({ required_error: "Body Required" }),
-        contribution: z.number(),
+        contribution: z.number({ required_error: "permite contribuidores?" }),
       });
 
       const { type, title, body, contribution } = addNewPostValidation.parse(
         request.body
       );
 
-      const result = await prisma.articles.create({
-        data: {
-          type,
-          title,
-          body,
-          contribution,
-          authorId: request.user.id,
-        },
-      });
-      reply.status(200).send({
-        sucess: "Parabéns! Seu artigo foi publicado com sucesso",
-        content: result,
-      });
+      try {
+        const result = await prisma.articles.create({
+          data: {
+            type,
+            title,
+            body,
+            contribution,
+            authorId: request.user.id,
+          },
+        });
+        reply.status(200).send({
+          sucess: "Parabéns! Seu artigo foi publicado com sucesso",
+          content: result,
+        });
+      } catch {
+        reply.status(500).send({
+          failed: "Erro ao publicar! verifique seus dados",
+        });
+      }
     }
   );
 
-  // * rota que atualiza os artigos
+  /**
+   * * rota que atualiza os artigos
+   * ? essa rota tem alguns bugs - numerando:
+   * ! 1 - só é possível editar uma única vez por ID
+   * ! 2 - quando um usuário edita duas vezes seu id é duplicado no banco
+   */
   fastify.put<{ Params: IdParam }>(
     "/article/update/:id",
-    /**
-     * ! ler o readme para entender a implementação do sistema de co-autor
-     * ! as regras de acesso da rota serão modificadas para um convite feito pelo autor
-     * ? convite por email ou sistema de follow
-     */
-
     { onRequest: [authenticate] },
     async (request, reply) => {
       const { id } = request.params;
       const updatePostValidation = z.object({
-        title: z.string(),
-        body: z.string(),
+        title: z.optional(z.string()),
+        body: z.optional(z.string()),
       });
 
       const { title, body } = updatePostValidation.parse(request.body);
@@ -203,10 +224,14 @@ export async function articlesRouter(fastify: FastifyInstance) {
         },
         select: {
           contribution: true,
+          coauthor: true,
         },
       });
 
-      if (result.contribution > 0 && result.contribution <= result.contribution) {
+      if (
+        result.contribution > 0 &&
+        result.coauthor.length < result.contribution
+      ) {
         await prisma.articles.update({
           where: {
             id,
