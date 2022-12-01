@@ -5,6 +5,8 @@ import { compare, hashSync } from "bcryptjs";
 import { sign } from "jsonwebtoken";
 import { authenticate } from "../plugins/authenticate";
 import { hasRole } from "../plugins/hasRole";
+import { logger } from "../log/logger";
+import { sendMailConfirmation } from "../controllers/sendMailConfirmation.js";
 
 interface IdParamUser {
   id: String;
@@ -31,8 +33,8 @@ export async function userRouter(fastify: FastifyInstance) {
   // * router
   fastify.post("/user/signup", async (request, reply) => {
     const addNewUser = z.object({
-      name: z.string({required_error: "Name required"}),
-      email: z.string({required_error: "Email Required"}),
+      name: z.string({ required_error: "Name required" }),
+      email: z.string({ required_error: "Email Required" }),
       password: z
         .string({ required_error: "Password Required" })
         .min(8, { message: "Password must be at least 8 characters" }),
@@ -56,8 +58,16 @@ export async function userRouter(fastify: FastifyInstance) {
           password: hash,
           admin: "membro",
         },
+        select: {
+          name: true,
+        },
       });
-      return { newUser };
+      reply.status(201).send({
+        success: "usuário criado com sucesso",
+        content: newUser,
+      });
+      sendMailConfirmation()
+      logger.info(`${newUser} criado com sucesso no banco de dados`);
     } else {
       reply.status(401).send({
         failed: "Verifique seus dados e tente novamente",
@@ -104,8 +114,8 @@ export async function userRouter(fastify: FastifyInstance) {
             user.token = token;
           } else {
             reply.status(401).send({
-              failed: "Erro o fazer o login, verifique seus dados"
-            })
+              failed: "Erro o fazer o login, verifique seus dados",
+            });
           }
         });
       });

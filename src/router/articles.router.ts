@@ -32,7 +32,7 @@ export async function articlesRouter(fastify: FastifyInstance) {
   // * rota main para teste de servidor.
   fastify.get("/", async (request, reply) => {
     reply.send({
-      message: "Welcome to application server",
+      message: "Welcome to application - Article System",
     });
   });
 
@@ -49,11 +49,11 @@ export async function articlesRouter(fastify: FastifyInstance) {
 
     if (article.length == 0) {
       reply.status(401).send({
-        failed: "Nenhum artigo foi públicado :(",
+        failed: "Nenhum Artigo Foi Publicado Até O Momento",
       });
     } else {
       reply.status(201).send({
-        sucess: "Esses são os artigos publicados até o momento",
+        sucess: "Artigos Publicados Até o Momento:",
         content: article,
       });
     }
@@ -67,6 +67,7 @@ export async function articlesRouter(fastify: FastifyInstance) {
     "/article/download/:id",
     { onRequest: [authenticate] },
     async (request, reply) => {
+
       const { id } = request.params;
 
       const findToDownload = await prisma.articles.findUnique({
@@ -89,9 +90,11 @@ export async function articlesRouter(fastify: FastifyInstance) {
         reply.status(201).send({
           success: "arquivo baixado com sucesso",
         });
+        // LOG MESSAGE 
+        logger.info(`O artigo ${findToDownload.title} foi baixado com sucesso`)
       } else {
-        return reply.status(400).send({
-          failed: "Artigo inexistente ou não pode ser baixado",
+        return reply.status(500).send({
+          failed: "Ops! um erro ocorreu ao tentar baixar o arquivo",
         });
       }
     }
@@ -115,8 +118,9 @@ export async function articlesRouter(fastify: FastifyInstance) {
 
     if (!getOneArticle) {
       reply.status(401).send({
-        failed: "O artigo não foi encontrado ou é inexistente",
+        failed: "Artigo não encotrado ou inexistente",
       });
+      logger.error(`Erro ao acessar o artigo de id: ${getOneArticle.title}`)
     } else {
       reply.status(201).send({
         sucess: "Artigo encontrado com sucesso",
@@ -124,6 +128,12 @@ export async function articlesRouter(fastify: FastifyInstance) {
       });
     }
   });
+
+  /****************************************
+   ****************************************
+   ***          ROTA GET TYPES          ***
+   ****************************************           
+   ****************************************/
 
   /**
    * * rota que retorna os artigos por seus tipos
@@ -151,10 +161,16 @@ export async function articlesRouter(fastify: FastifyInstance) {
         reply.status(400).send({
           failed: "Nenhum artigo sobre esse tema foi encontrado",
         });
-        logger.error(`Não foi encontrado nenhum artigo sobre ${allTypesArticles}`)
+        logger.error(`Um usuário pesquisar artigos sobre ${type}`)
       }
     }
   );
+
+  /****************************************
+   ****************************************
+   ***           ROTA CREATE            ***
+   ****************************************           
+   ****************************************/
 
   /**
    * * rota que posta novos artigos no banco de dados
@@ -200,6 +216,11 @@ export async function articlesRouter(fastify: FastifyInstance) {
     }
   );
 
+  /****************************************
+   ****************************************
+   ***           ROTA UPDATE            ***
+   ****************************************           
+   ****************************************/
   /**
    * * rota que atualiza os artigos
    * ? essa rota tem alguns bugs - numerando:
@@ -259,6 +280,11 @@ export async function articlesRouter(fastify: FastifyInstance) {
     }
   );
 
+  /****************************************
+   ****************************************
+   ***           ROTA DELETE            ***
+   ****************************************           
+   ****************************************/
   // * rota que deleta os artigos publicados
   fastify.delete<{ Params: IdParam }>(
     "/article/delete/:id",

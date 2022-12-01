@@ -30,6 +30,7 @@
   "devDependencies": {
     "@mermaid-js/mermaid-cli": "^9.1.7",
     "@types/node": "^18.11.9",
+    "@types/nodemailer": "^6.4.6",
     "prisma": "^4.5.0",
     "prisma-erd-generator": "^1.2.2",
     "ts-node": "^10.9.1",
