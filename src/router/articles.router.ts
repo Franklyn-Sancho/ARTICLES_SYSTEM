@@ -1,10 +1,10 @@
+import * as fs from "fs";
 import { prisma } from "../lib/prisma";
 import { FastifyInstance } from "fastify";
 import { z } from "zod";
 import { authenticate } from "../plugins/authenticate";
 import { hasRole } from "../plugins/hasRole";
-import * as fs from "fs";
-import {logger} from '../log/logger'
+import { logger } from "../log/logger";
 
 /**
  * * Nesse arquivo nós temos as rotas de artigos da aplicação
@@ -48,15 +48,10 @@ export async function articlesRouter(fastify: FastifyInstance) {
     });
 
     if (article.length == 0) {
-      reply.status(401).send({
-        failed: "Nenhum Artigo Foi Publicado Até O Momento",
-      });
-    } else {
-      reply.status(201).send({
-        sucess: "Artigos Publicados Até o Momento:",
-        content: article,
-      });
+      throw new Error("Não há nenhum artigo publicado");
     }
+
+    reply.status(201).send({ content: article });
   });
 
   /**
@@ -65,11 +60,9 @@ export async function articlesRouter(fastify: FastifyInstance) {
    */
   fastify.get<{ Params: IdParam }>(
     "/article/download/:id",
-    { onRequest: [authenticate] },
+    /* { onRequest: [authenticate] }, */
     async (request, reply) => {
-
       const { id } = request.params;
-
       const findToDownload = await prisma.articles.findUnique({
         where: {
           id: String(id),
@@ -77,26 +70,21 @@ export async function articlesRouter(fastify: FastifyInstance) {
         select: {
           title: true,
           body: true,
+          createdAt: true,
         },
       });
 
-      if (findToDownload) {
-        let data = JSON.stringify(findToDownload, null, 2);
+      let data = JSON.stringify(findToDownload, null, 2);
 
-        fs.writeFile(`${findToDownload.title}.txt`, data, (err) => {
-          if (err) throw err;
-          logger.error(`Ocorreu um erro ao tentar baixar o arquivo ${findToDownload.title}`)
-        });
-        reply.status(201).send({
-          success: "arquivo baixado com sucesso",
-        });
-        // LOG MESSAGE 
-        logger.info(`O artigo ${findToDownload.title} foi baixado com sucesso`)
-      } else {
-        return reply.status(500).send({
-          failed: "Ops! um erro ocorreu ao tentar baixar o arquivo",
-        });
+      if (!findToDownload) {
+        throw new Error("Nenhum artigo foi encontrado");
       }
+
+      fs.writeFile(`${findToDownload.title}.txt`, data, (err) => {
+        throw new Error("Erro ao baixar o arquivo");
+      });
+
+      reply.status(201).send({ sucess: "Arquivo baixado com sucesso" });
     }
   );
 
@@ -117,22 +105,16 @@ export async function articlesRouter(fastify: FastifyInstance) {
     });
 
     if (!getOneArticle) {
-      reply.status(401).send({
-        failed: "Artigo não encotrado ou inexistente",
-      });
-      logger.error(`Erro ao acessar o artigo de id: ${getOneArticle.title}`)
-    } else {
-      reply.status(201).send({
-        sucess: "Artigo encontrado com sucesso",
-        content: getOneArticle,
-      });
+      throw new Error("Artigo não encontrado ou inexistente");
     }
+
+    reply.status(201).send({ content: getOneArticle });
   });
 
   /****************************************
    ****************************************
    ***          ROTA GET TYPES          ***
-   ****************************************           
+   ****************************************
    ****************************************/
 
   /**
@@ -153,23 +135,18 @@ export async function articlesRouter(fastify: FastifyInstance) {
       });
 
       if (allTypesArticles.length > 0) {
-        reply.status(201).send({
-          success: `Retornando todos os artigos sobre ${type}`,
-          content: allTypesArticles,
-        });
-      } else {
-        reply.status(400).send({
-          failed: "Nenhum artigo sobre esse tema foi encontrado",
-        });
-        logger.error(`Um usuário pesquisar artigos sobre ${type}`)
+        throw new Error("Nenhum artigo sobre esse tema foi encontrado");
       }
+
+      reply.status(201).send({ content: allTypesArticles });
+
     }
   );
 
   /****************************************
    ****************************************
    ***           ROTA CREATE            ***
-   ****************************************           
+   ****************************************
    ****************************************/
 
   /**
@@ -219,7 +196,7 @@ export async function articlesRouter(fastify: FastifyInstance) {
   /****************************************
    ****************************************
    ***           ROTA UPDATE            ***
-   ****************************************           
+   ****************************************
    ****************************************/
   /**
    * * rota que atualiza os artigos
@@ -283,7 +260,7 @@ export async function articlesRouter(fastify: FastifyInstance) {
   /****************************************
    ****************************************
    ***           ROTA DELETE            ***
-   ****************************************           
+   ****************************************
    ****************************************/
   // * rota que deleta os artigos publicados
   fastify.delete<{ Params: IdParam }>(

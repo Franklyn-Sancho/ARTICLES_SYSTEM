@@ -6,7 +6,6 @@ import { sign } from "jsonwebtoken";
 import { authenticate } from "../plugins/authenticate";
 import { hasRole } from "../plugins/hasRole";
 import { logger } from "../log/logger";
-import { sendMailConfirmation } from "../controllers/sendMailController.js";
 
 interface IdParamUser {
   id: String;
@@ -66,7 +65,6 @@ export async function userRouter(fastify: FastifyInstance) {
         success: "usuário criado com sucesso",
         content: newUser,
       });
-      sendMailConfirmation()
       logger.info(`${newUser} criado com sucesso no banco de dados`);
     } else {
       reply.status(401).send({

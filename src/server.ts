@@ -2,7 +2,6 @@ import Fastify from "fastify";
 import cors from "@fastify/cors";
 import { articlesRouter } from "./router/articles.router";
 import { userRouter } from "./router/user.router";
-import {controllers} from './controllers/sendMailController.js'
 import jwt from "@fastify/jwt";
 
 
@@ -23,7 +22,6 @@ async function main() {
 
   fastify.register(articlesRouter);
   fastify.register(userRouter);
-  fastify.register(controllers)
 
   await fastify.listen({ port: 3000, host: "0.0.0.0" });
 }
