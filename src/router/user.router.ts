@@ -6,7 +6,7 @@ import { sign } from "jsonwebtoken";
 import { authenticate } from "../plugins/authenticate";
 import { hasRole } from "../plugins/hasRole";
 import { logger } from "../log/logger";
-import { sendMailConfirmation } from "../controllers/sendMailConfirmation.js";
+import { sendMailConfirmation } from "../controllers/sendMailController.js";
 
 interface IdParamUser {
   id: String;

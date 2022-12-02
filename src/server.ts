@@ -2,7 +2,7 @@ import Fastify from "fastify";
 import cors from "@fastify/cors";
 import { articlesRouter } from "./router/articles.router";
 import { userRouter } from "./router/user.router";
-import {controllers} from './controllers/sendMailConfirmation.js'
+import {controllers} from './controllers/sendMailController.js'
 import jwt from "@fastify/jwt";
 
 
