@@ -5,7 +5,7 @@ import { compare, hashSync } from "bcryptjs";
 import { sign } from "jsonwebtoken";
 import { authenticate } from "../plugins/authenticate";
 import { hasRole } from "../plugins/hasRole";
-import { logger } from "../log/logger";
+import { User } from "@prisma/client";
 
 interface IdParamUser {
   id: String;
@@ -49,36 +49,33 @@ export async function userRouter(fastify: FastifyInstance) {
       },
     });
 
-    if (!findUser) {
-      const newUser = await prisma.user.create({
-        data: {
-          name,
-          email,
-          password: hash,
-          admin: "membro",
-        },
-        select: {
-          name: true,
-        },
-      });
-      reply.status(201).send({
-        success: "usuário criado com sucesso",
-        content: newUser,
-      });
-      logger.info(`${newUser} criado com sucesso no banco de dados`);
-    } else {
-      reply.status(401).send({
-        failed: "Verifique seus dados e tente novamente",
-      });
+    if (findUser) {
+      throw new Error("verifique seus dados e tente novamente");
     }
+
+    const createNewUser = await prisma.user.create({
+      data: {
+        name,
+        email,
+        password: hash,
+        admin: "membro",
+      },
+      select: {
+        name: true,
+      },
+    });
+    reply.status(201).send({
+      sucess: "Usuário criado com sucesso",
+      content: createNewUser,
+    });
   });
 
   // ! rota responsável por fazer o login dos usuários
   fastify.post("/user/signin", (request, reply) => {
     const loginUserValidation = z.object({
-      email: z.string({ required_error: "email é requerido para fazer login" }),
+      email: z.string({ required_error: "email requirido" }),
       password: z.string({
-        required_error: "senha é requerido para fazer login",
+        required_error: "senha requirida",
       }),
     });
 
@@ -138,23 +135,21 @@ export async function userRouter(fastify: FastifyInstance) {
       });
 
       if (!findUserForUpdate) {
-        reply.status(401).send({
-          failed: "Membro não encontrado ou inexistente",
-        });
-      } else {
-        const result = await prisma.user.update({
-          where: {
-            id: String(id),
-          },
-          data: {
-            admin,
-          },
-        });
-        reply.status(200).send({
-          success: "O usuário foi atualizado com sucesso",
-          content: result,
-        });
+        throw new Error("Usuário não encontrado ou inexistente");
       }
+
+      const updateTheUser = await prisma.user.update({
+        where: {
+          id: String(id),
+        },
+        data: {
+          admin,
+        },
+      });
+      reply.status(200).send({
+        sucess: "Usuário atualizado com sucesso",
+        content: updateTheUser,
+      });
     }
   );
 
@@ -172,20 +167,18 @@ export async function userRouter(fastify: FastifyInstance) {
       });
 
       if (!findUserForDelete) {
-        reply.status(400).send({
-          failed: "Usuário não encontrado ou inexistente",
-        });
-      } else {
-        const userDelete = await prisma.user.delete({
-          where: {
-            id: String(id),
-          },
-        });
-        reply.status(200).send({
-          success: "O usuário foi deletado com sucesso",
-          content: userDelete,
-        });
+        throw new Error("Usuário não encontrado ou inexistente");
       }
+
+      const deleteTheUser = await prisma.user.delete({
+        where: {
+          id: String(id),
+        },
+      });
+      reply.status(200).send({
+        sucess: "Usuário deletado com sucesso",
+        content: deleteTheUser,
+      });
     }
   );
 }

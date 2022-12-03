@@ -60,7 +60,7 @@ export async function articlesRouter(fastify: FastifyInstance) {
    */
   fastify.get<{ Params: IdParam }>(
     "/article/download/:id",
-    /* { onRequest: [authenticate] }, */
+    { onRequest: [authenticate] },
     async (request, reply) => {
       const { id } = request.params;
       const findToDownload = await prisma.articles.findUnique({
@@ -170,6 +170,7 @@ export async function articlesRouter(fastify: FastifyInstance) {
       const { type, title, body, contribution } = addNewPostValidation.parse(
         request.body
       );
+
 
       try {
         const result = await prisma.articles.create({
