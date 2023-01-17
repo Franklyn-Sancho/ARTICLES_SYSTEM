@@ -7,10 +7,8 @@ import { hasRole } from "../plugins/hasRole";
 import { logger } from "../log/logger";
 
 /**
- * * Nesse arquivo nós temos as rotas de artigos da aplicação
- * ! São necessárias diversas melhorias e aprimoramentos
- * TODO: melhorias nas exceções
- * TODO: implementar sistema de co-autoria => novas rotas e modificações no banco de dados
+ * * Arquivo de rotas 
+ * ! Necessário melhorias na rota update
  */
 
 interface IdParam {
@@ -26,20 +24,18 @@ enum TextTypes {
   Poesia = "poesia",
   Culinaria = "culinaria",
   Conto = "conto",
+  Cronica = "cronica"
 }
 
 export async function articlesRouter(fastify: FastifyInstance) {
-  // * rota main para teste de servidor.
+  // * rota principal para teste de servidor.
   fastify.get("/", async (request, reply) => {
     reply.send({
-      message: "Welcome to application - Article System",
+      message: "Welcome to application",
     });
   });
 
-  /**
-   * * rota que retornar todos os artigos já públicados
-   * * as exceções estão funcionando perfeitamente
-   */
+  // * retorna todos os artigos publicados no momento
   fastify.get("/article/all", async (request, reply) => {
     const article = await prisma.articles.findMany({
       orderBy: {
@@ -48,50 +44,13 @@ export async function articlesRouter(fastify: FastifyInstance) {
     });
 
     if (article.length == 0) {
-      throw new Error("Não há nenhum artigo publicado");
+      throw new Error("Não há nenhum artigo publicado no momento");
     }
 
-    reply.status(201).send({ content: article });
+    reply.status(200).send({ content: article });
   });
 
-  /**
-   * * rota que faz download do artigo
-   * * as exceções estão funcionamento perfeitamente
-   */
-  fastify.get<{ Params: IdParam }>(
-    "/article/download/:id",
-    { onRequest: [authenticate] },
-    async (request, reply) => {
-      const { id } = request.params;
-      const findToDownload = await prisma.articles.findUnique({
-        where: {
-          id: String(id),
-        },
-        select: {
-          title: true,
-          body: true,
-          createdAt: true,
-        },
-      });
-
-      let data = JSON.stringify(findToDownload, null, 2);
-
-      if (!findToDownload) {
-        throw new Error("Nenhum artigo foi encontrado");
-      }
-
-      fs.writeFile(`${findToDownload.title}.txt`, data, (err) => {
-        throw new Error("Erro ao baixar o arquivo");
-      });
-
-      reply.status(201).send({ sucess: "Arquivo baixado com sucesso" });
-    }
-  );
-
-  /**
-   * * rota que retorna um artigo pelo seu id.
-   * * as exceções estão funcionando perfeitamente
-   */
+  // * retorna o artigo por seu ID
   fastify.get<{ Params: IdParam }>("/article/:id", async (request, reply) => {
     const { id } = request.params;
     const getOneArticle = await prisma.articles.findUnique({
@@ -111,16 +70,7 @@ export async function articlesRouter(fastify: FastifyInstance) {
     reply.status(201).send({ content: getOneArticle });
   });
 
-  /****************************************
-   ****************************************
-   ***          ROTA GET TYPES          ***
-   ****************************************
-   ****************************************/
-
-  /**
-   * * rota que retorna os artigos por seus tipos
-   * * as exceções estão funcionamento
-   */
+  // * retorna os artigos por seu tipo;
   fastify.get<{ Params: IdParam }>(
     "/article/types/:type",
     async (request, reply) => {
@@ -143,6 +93,38 @@ export async function articlesRouter(fastify: FastifyInstance) {
     }
   );
 
+  // * responsável por fazer o download dos artigos por ID
+  fastify.get<{ Params: IdParam }>(
+    "/article/download/:id",
+    { onRequest: [authenticate] },
+    async (request, reply) => {
+      const { id } = request.params;
+      const findToDownload = await prisma.articles.findUnique({
+        where: {
+          id: String(id),
+        },
+        select: {
+          title: true,
+          body: true,
+          createdAt: true,
+        },
+      });
+
+      let data = JSON.stringify(findToDownload, null, 2);
+
+      if (!findToDownload) {
+        throw new Error("Nenhum artigo com este ID foi encontrado");
+      }
+
+      fs.writeFile(`${findToDownload.title}.txt`, data, (err) => {
+        throw new Error("Ocorreu um erro ao baixar o arquivo");
+      });
+
+      reply.status(201).send({ sucess: "Arquivo txt baixado com sucesso" });
+    }
+  );
+
+
   /****************************************
    ****************************************
    ***           ROTA CREATE            ***
@@ -151,7 +133,6 @@ export async function articlesRouter(fastify: FastifyInstance) {
 
   /**
    * * rota que posta novos artigos no banco de dados
-   * * as exceções estão funcionando perfeitamente
    * ! modificar o autor para um dado não sensível
    */
   fastify.post(
@@ -183,12 +164,12 @@ export async function articlesRouter(fastify: FastifyInstance) {
           },
         });
         reply.status(200).send({
-          sucess: "Parabéns! Seu artigo foi publicado com sucesso",
+          sucess: "Seu artigo foi publicado com sucesso",
           content: result,
         });
       } catch {
         reply.status(500).send({
-          failed: "Erro ao publicar! verifique seus dados",
+          failed: "Erro ao publicar, verifique seus dados",
         });
       }
     }
@@ -247,12 +228,12 @@ export async function articlesRouter(fastify: FastifyInstance) {
           },
         });
         reply.status(200).send({
-          sucess: "Post Successfully Updated",
+          sucess: "O artigo foi atualizado com sucesso",
           content: result,
         });
       } else {
         reply.status(401).send({
-          failed: "excedeu o número de contribuidores",
+          failed: "O artigo excedeu o número de contribuidores",
         });
       }
     }
